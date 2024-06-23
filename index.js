@@ -11,8 +11,8 @@ const convertWithOptions = (document, format, filter, options, callback) => {
     const tmpOptions = (options || {}).tmpOptions || {};
     const asyncOptions = (options || {}).asyncOptions || {};
     const execOptions = (options || {}).execOptions || {};
-    const tempDir = tmp.dirSync({prefix: 'libreofficeConvert_', unsafeCleanup: true, ...tmpOptions});
-    const installDir = tmp.dirSync({prefix: 'soffice', unsafeCleanup: true, ...tmpOptions});
+    const tempDir = tmp.dirSync({ prefix: 'libreofficeConvert_', unsafeCleanup: true, ...tmpOptions });
+    const installDir = tmp.dirSync({ prefix: 'soffice', unsafeCleanup: true, ...tmpOptions });
     return async.auto({
         soffice: (callback) => {
             let paths = (options || {}).sofficeBinaryPaths || [];
@@ -36,9 +36,15 @@ const convertWithOptions = (document, format, filter, options, callback) => {
                 paths,
                 (filePath, callback) => fs.access(filePath, err => callback(null, !err)),
                 (err, res) => {
-                    if (res.length === 0) {
+                    if (!res?.length) {
                         return callback(new Error('Could not find soffice binary'));
                     }
+
+                    const parts = res[0].split('/');
+                    parts.pop();
+                    execOptions.cwd = parts.join('/');
+
+                    execOptions.shell = true;
 
                     return callback(null, res[0]);
                 }
@@ -56,7 +62,7 @@ const convertWithOptions = (document, format, filter, options, callback) => {
             args.push('--outdir');
             args.push(tempDir.name);
             args.push(path.join(tempDir.name, 'source'));
-          
+
             return execFile(results.soffice, args, execOptions, callback);
         }],
         loadDestination: ['convert', (results, callback) =>
@@ -65,18 +71,18 @@ const convertWithOptions = (document, format, filter, options, callback) => {
                 interval: asyncOptions.interval || 200
             }, (callback) => fs.readFile(path.join(tempDir.name, `source.${format.split(":")[0]}`), callback), callback)
         ]
-    }).then( (res) => {
+    }).then((res) => {
         return callback(null, res.loadDestination);
-    }).catch( (err) => {
+    }).catch((err) => {
         return callback(err);
-    }).finally( () => {
+    }).finally(() => {
         tempDir.removeCallback();
         installDir.removeCallback();
     });
 };
 
 const convert = (document, format, filter, callback) => {
-    return convertWithOptions(document, format, filter, {}, callback)
+    return convertWithOptions(document, format, filter, {}, callback);
 };
 
 module.exports = {
