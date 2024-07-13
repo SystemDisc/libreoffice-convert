@@ -14,6 +14,7 @@ declare module "libreoffice-convert" {
     format: string,
     filter: string | undefined,
     options: {
+      srcExt?: string,
       tmpOptions?: Record<string | number | symbol, unknown>;
       asyncOptions?: { times?: number; interval?: number };
       sofficeBinaryPaths?: string[];
